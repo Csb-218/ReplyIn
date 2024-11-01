@@ -7,7 +7,7 @@ import "~/assets/tailwind.css";
 
 
 export default defineContentScript({
-  matches: ["*://*.linkedin.com/*"],
+  matches: ["*://*.linkedin.com/*",'*://*.wellfound.com/*'],
   cssInjectionMode: 'ui',
   runAt: 'document_start',
 
@@ -50,7 +50,7 @@ export default defineContentScript({
         // mutation observer
         const observer = new MutationObserver((mutations, observer) => {
 
-          const messageBox = document.querySelector('.msg-form__contenteditable');
+          const messageBox = document.querySelector('.msg-form__contenteditable') || document.getElementById("form-input--customQuestionAnswers[69510][answer]");;
 
           if (messageBox) {
             // listen to focus
