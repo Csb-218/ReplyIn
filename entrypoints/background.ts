@@ -11,12 +11,12 @@ export default defineBackground(() => {
   function listenCreated(tab: any) {
 
     if (isContentScriptReady) {
-      if (tab.url?.includes("linkedin.com")) {
+      if (tab.url?.includes("linkedin.com") || tab.url?.includes("wellfound.com")) {
 
-        console.log("LinkedIn tab detected (onCreated):", tab.url, tab.id);
+        console.log(" tab detected (onCreated):", tab.url, tab.id);
 
         // Send a message to the content script in the new tab
-        chrome.tabs.sendMessage(tab.id!, { message: "LinkedInPageUpdated" }, async (response) => {
+        chrome.tabs.sendMessage(tab.id!, { message: "PageUpdated" }, async (response) => {
 
           console.log('Message sent to content script', response);
 
@@ -30,11 +30,11 @@ export default defineBackground(() => {
 
     if (isContentScriptReady) {
 
-      if (changeInfo.status === 'complete' && tab.url?.includes("linkedin.com")) {
-        console.log("LinkedIn tab detected:", tab.url);
+      if (changeInfo.status === 'complete' && (tab.url?.includes("linkedin.com") || tab.url?.includes("wellfound.com"))) {
+        console.log(" tab detected:", tab.url);
 
         // Send a message to the content script in the current tab
-        chrome.tabs.sendMessage(tabId, { message: "LinkedInPageUpdated" }, async (response) => {
+        chrome.tabs.sendMessage(tabId, { message: "PageUpdated" }, async (response) => {
 
           console.log('Message sent to content script', response);
 
