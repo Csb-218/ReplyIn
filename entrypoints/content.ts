@@ -4,59 +4,154 @@ import insertIcon from '~/assets/insertIcon.svg'
 import regenerateIcon from '~/assets/regenerateIcon.svg'
 import type { ContentScriptContext } from "wxt/client";
 import "~/assets/tailwind.css";
+import { Mistral } from "@mistralai/mistralai";
+import { createClient } from '@supabase/supabase-js';
+import { Database } from "@/utils/supabase";
+
+
+// Load environment variables from .env file
+
+
+const client = new Mistral({
+  apiKey: 'PyBqviCN1xwhAv2V6677tjxsl19Pk9ka'
+});
+
+const db_url: string = 'https://bxmbmbjyekriyoefgxwq.supabase.co'
+const db_api_key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ4bWJtYmp5ZWtyaXlvZWZneHdxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mjg3NTE4ODMsImV4cCI6MjA0NDMyNzg4M30.jZmls3wISihsyNtXc6TNK7JCaFimqa0i15f-_ELJsqs'
+// Create a single supabase client for interacting with your database
+const supabase = createClient<Database>(db_url, db_api_key)
+
 
 
 export default defineContentScript({
-  matches: ["*://*.linkedin.com/*",'*://*.wellfound.com/*'],
+  matches: ["*://*.linkedin.com/*", '*://*.wellfound.com/*'],
   cssInjectionMode: 'ui',
-  runAt: 'document_start',
+  runAt: 'document_end',
 
   async main(ctx) {
-    
-    chrome.runtime.onMessage.addListener(async(request, sender, sendResponse) => {
+
+    chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
 
       // message recieved
-      if (request.message === "LinkedInPageUpdated") {
+      if (request.message === "PageUpdated") {
 
-          // icon initialization
-          const img: HTMLImageElement = document.createElement('img');
-          img.src = generateIcon
-          img.id ='generateIcon'
-          img.alt = 'generate'
-          img.style.width = '32px'
-          img.style.height = '32px'
-          img.style.position = 'absolute'
-          img.style.bottom = '0px'
-          img.style.right = '2px'
-          img.style.cursor = 'pointer'
+        // icon initialization
+        const img: HTMLImageElement = document.createElement('img');
+        img.src = generateIcon
+        img.id = 'generateIcon'
+        img.alt = 'generate'
+        img.style.width = '32px'
+        img.style.height = '32px'
+        img.style.position = 'absolute'
+        img.style.bottom = '0px'
+        img.style.right = '2px'
+        img.style.cursor = 'pointer'
+
+        async function getCandidate() {
+
+
+          const { data, error } = await supabase
+            .from('candidates')
+            .select()
+            .eq('id', 1)
+
+          // alert(error)
+
+          // console.error(error)
+          return data
+
+        }
+
+        async function generateChatResponse(data: any, JD: string) {
+
+          console.log(JSON.stringify(data))
+
+          const response = await client.chat.complete({
+            model: 'mistral-large-latest',
+            messages: [{
+              role: 'user',
+
+              // content:Hey Mistral, Can you read and print a json ? If yes read and print it . ### JSON: ${JSON.stringify(data)}
+
+              content: `
+                 # Job description : ${JD} 
+                 # Candidate : ${JSON.stringify(data)} 
+                 
+                 # Write a suitable cover letter for the candidate using candidate's information. Don't provide a template. Tailor it according to the provided candidate's information. Use minute details such as candidate's address , phone number, candidate's name etc. to write a good cover letter. 
+                 ###Caution : Wherever you find null leave that field.`
+            }],
+          });
+
+          alert(response)
+          if (response.choices && response.choices.length > 0 && response.choices[0].message) {
+            return response.choices[0].message.content;
+          } else {
+            console.error("API response is missing 'choices' or 'message' content.");
+            return ""; // or handle the error as needed
+          }
+
+
+        }
+        
 
 
         // insert generate icon on focus
-        function listenFocus(event:Event) {
+        async function listenFocus(event: Event) {
+          // alert('listening')
           const messageBox = event.currentTarget as HTMLElement;
           img.onclick = () => {
+            alert('listening')
             ui.mount();
+
+
+            
             // messageBox.textContent = '' 
           }
-          messageBox.appendChild(img)
+
+          messageBox.parentNode?.appendChild(img)
+
+          // Select the <h2> element that contains the text "About the job"
+          const heading = Array.from(document.querySelectorAll('h2')).find(
+            el => el.textContent?.trim() === "About the job"
+          );
+
+          if (heading) {
+            console.log(heading);
+            // messageBox.innerText = "csb"
+            const AboutTheJobSection = heading.parentNode?.textContent ? heading.parentNode?.textContent : "";
+
+            // alert("start")
+            const candidate: any = await getCandidate()
+            // alert(candidate)
+            ui.mount();
+            const chat: any = await generateChatResponse(candidate, AboutTheJobSection)
+            alert(chat)
+            messageBox.innerText = chat ? chat : AboutTheJobSection
+
+          }
         }
 
         // remove generate icon on blur
-        function removeFocus(event:Event){
+        function removeFocus(event: Event) {
           const messageBox = event.currentTarget as HTMLElement;
-          img && messageBox.removeChild(img)
+          // img && messageBox.removeChild(img)
         }
 
         // mutation observer
         const observer = new MutationObserver((mutations, observer) => {
 
-          const messageBox = document.querySelector('.msg-form__contenteditable') || document.getElementById("form-input--customQuestionAnswers[69510][answer]");;
+          const messageBox = document.getElementsByTagName("textarea")[0]
+
+          // alert(messageBox)
+          console.log(messageBox)
 
           if (messageBox) {
+
+            alert(messageBox.toString())
             // listen to focus
-            messageBox?.addEventListener("focus",listenFocus)
+            messageBox?.addEventListener("focus", listenFocus)
             // Stop observing once the element is found
-            observer.disconnect(); 
+            observer.disconnect();
             // listen to blur
             messageBox?.addEventListener("blur", removeFocus)
           }
@@ -66,12 +161,12 @@ export default defineContentScript({
           childList: true,
           subtree: true
         });
-        
+
         // Send a response back
         sendResponse({
           status: "success",
           response: "message recieved"
-        }); 
+        });
 
         return true
 
@@ -137,7 +232,7 @@ function createUi(ctx: ContentScriptContext) {
       // insert button action
       insertButton.onclick = () => {
 
-        const messageBox : HTMLInputElement = document.querySelector('div.msg-form__contenteditable ') as HTMLInputElement;
+        const messageBox: HTMLInputElement = document.querySelector('div.msg-form__contenteditable ') as HTMLInputElement;
 
         messageBox.innerHTML = `<p>Thank you for the opportunity! If you have any more questions or if there's anything else I can help you with, feel free to ask.</p>`
         messageBox.value = "Thank you for the opportunity! If you have any more questions or if there's anything else I can help you with, feel free to ask."
@@ -145,7 +240,7 @@ function createUi(ctx: ContentScriptContext) {
         messageBox.dispatchEvent(new Event('change', { bubbles: true }));
         messageBox.dispatchEvent(new Event('input', { bubbles: true }))
 
-        const messageBoxPlace : HTMLElement = document.querySelector('div.msg-form__placeholder ') as HTMLElement;
+        const messageBoxPlace: HTMLElement = document.querySelector('div.msg-form__placeholder ') as HTMLElement;
         messageBoxPlace.innerHTML = " "
         messageBoxPlace.dataset.placeholder = " "
 
