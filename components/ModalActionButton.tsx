@@ -13,10 +13,14 @@ const ModalActionButton = ({coverLetter,generating}:cover) => {
     const [content, setContent] = useState<string>('');
     const [hide,setHide] = useState<boolean>(true)
 
+    
+
     useEffect(()=>{
        setContent(coverLetter)
        console.log(coverLetter)
     },[coverLetter])
+
+
 
 
     return (

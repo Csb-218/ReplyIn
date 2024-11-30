@@ -1,5 +1,5 @@
 
-export default defineBackground(() => {
+export default defineBackground(async() => {
   console.log('Hello csb !', { id: browser.runtime.id });
 
   chrome.runtime.onInstalled.addListener(() => {
@@ -8,9 +8,10 @@ export default defineBackground(() => {
 
   var isContentScriptReady: boolean = true;
 
-  function listenCreated(tab: any) {
-
-    if (isContentScriptReady) {
+  async function listenCreated(tab: any) {
+    console.log('yes')
+     
+    
       if ( tab.url?.includes("wellfound.com")) {
 
         console.log("tab detected (onCreated):", tab.url, tab.id);
@@ -22,7 +23,7 @@ export default defineBackground(() => {
 
         });
       }
-    }
+    
 
   }
 
@@ -30,9 +31,9 @@ export default defineBackground(() => {
 
     if (isContentScriptReady) {
 
-      if (changeInfo.status === 'complete' && tab.url?.includes("wellfound.com")) {
-        console.log(" tab detected(onUpdated):", tab.url,tabId);
+      if (changeInfo.status === 'complete' && tab.url?.includes("wellfound.com/jobs?job_listing_id")) {
 
+        console.log(" tab detected(onUpdated):", tab.url,tabId);
         // Send a message to the content script in the current tab
         chrome.tabs.sendMessage(tabId, { message: "PageUpdated" }, async (response) => {
 
@@ -41,14 +42,12 @@ export default defineBackground(() => {
         })
       }
     }
-
-
   }
 
 
 
   // Listen to new tab creation 
-  chrome.tabs.onCreated.addListener(listenCreated);
+  // chrome.tabs.onCreated.addListener(listenCreated);
   // Listen to new tab updation 
   chrome.tabs.onUpdated.addListener(listenUpdated);
 
