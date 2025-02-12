@@ -1,26 +1,19 @@
 import { useState, useRef, useMemo } from 'react'
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
+import {cover} from '../types'
 
-
-interface cover{
-    coverLetter:string
-    generating:boolean
-}
 
 const ModalActionButton = ({coverLetter,generating}:cover) => {
+
     const editor = useRef(null);
     const [content, setContent] = useState<string>('');
     const [hide,setHide] = useState<boolean>(true)
-
-    
 
     useEffect(()=>{
        setContent(coverLetter)
        console.log(coverLetter)
     },[coverLetter])
-
-
 
 
     return (
