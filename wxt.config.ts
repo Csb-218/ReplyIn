@@ -5,7 +5,7 @@ export default defineConfig({
   modules: ['@wxt-dev/module-react'],
   manifest: {
     permissions: ['storage',"activeTab","scripting","tabs","webNavigation"],
-    host_permissions: ['*://*.wellfound.com/*'],
+    host_permissions: ['*://*.wellfound.com/*','*://*.internshala.com/*'],
     
   }
 });
