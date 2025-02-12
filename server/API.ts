@@ -1,4 +1,4 @@
-
+import {Database} from "../types/supabase"
 import { createClient } from '@supabase/supabase-js';
 const db_url = import.meta.env.WXT_SUPABASE_URL!
 const db_api_key = import.meta.env.WXT_SUPABASE_API_KEY!
@@ -9,7 +9,7 @@ export async function getCandidate() {
   try {
     // console.log(supabase,db_url,db_api_key)
 
-    const { data, error } = await supabase
+    const { data , error } = await supabase
       .from('candidates')
       .select()
       .eq('id', 1)
@@ -23,11 +23,9 @@ export async function getCandidate() {
     console.error(error)
   }
 
-
-
 }
 
-export async function generateChatResponse(data: any, JD: string, client: any) {
+export async function generateChatResponse(data: any, JD: string, client: any):Promise<string> {
 
   console.log(JSON.stringify(data))
 
