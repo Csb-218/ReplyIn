@@ -1,23 +1,24 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { fakeBrowser } from "wxt/testing";
-
+import { listenUpdated } from "@/entrypoints/background";
 
 // Mock the `isContentScriptReady` variable
 let isContentScriptReady = true;
 
 // Mock the `listenUpdated` function
-function listenUpdated(tabId: number, changeInfo: any, tab: any) {
-  if (isContentScriptReady) {
-    if (changeInfo.status === "complete" && tab.url?.includes("wellfound.com/jobs?job_listing_id")) {
-      console.log("tab detected (onUpdated):", tab.url, tabId);
+// function listenUpdated(tabId: number, changeInfo: any, tab: any) {
+//   if (isContentScriptReady) {
+//     if (changeInfo.status === "complete" && tab.url?.includes("wellfound.com/jobs?job_listing_id")) {
+//       console.log("tab detected (onUpdated):", tab.url, tabId);
 
-      // Send a message to the content script in the current tab
-      chrome.tabs.sendMessage(tabId, { message: "PageUpdated" }, async (response) => {
-        console.log("Message sent to content script", response);
-      });
-    }
-  }
-}
+//       // Send a message to the content script in the current tab
+//       chrome.tabs.sendMessage(tabId, { message: "PageUpdated" }, async (response) => {
+//         console.log("Message sent to content script", response);
+//       });
+//     }
+//   }
+// }
+const fakeListenUpdated = vi.fn(listenUpdated);
 
 // Test suite for the `listenUpdated` function
 describe("listenUpdated Function", () => {
@@ -38,7 +39,7 @@ describe("listenUpdated Function", () => {
     fakeBrowser.tabs.sendMessage = sendMessageMock;
 
     // Simulate the onUpdated event
-    listenUpdated(tabId, changeInfo, tab);
+    fakeListenUpdated(tabId, changeInfo, tab);
 
     // Assertions
     expect(sendMessageMock).toHaveBeenCalledWith(tabId, { message: "PageUpdated" }, expect.any(Function));
@@ -73,7 +74,7 @@ describe("listenUpdated Function", () => {
     fakeBrowser.tabs.sendMessage = sendMessageMock;
 
     // Simulate the onUpdated event
-    listenUpdated(tabId, changeInfo, tab);
+    fakeListenUpdated(tabId, changeInfo, tab);
 
     // Assertions
     expect(sendMessageMock).not.toHaveBeenCalled();
