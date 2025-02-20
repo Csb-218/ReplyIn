@@ -4,7 +4,7 @@ const db_url = import.meta.env.WXT_SUPABASE_URL!
 const db_api_key = import.meta.env.WXT_SUPABASE_API_KEY!
 const supabase = createClient<Database>(`${db_url}`, `${db_api_key}`)
 
-export async function getCandidate() {
+export async function getCandidate(email:string) {
 
   try {
     // console.log(supabase,db_url,db_api_key)
@@ -12,7 +12,7 @@ export async function getCandidate() {
     const { data , error } = await supabase
       .from('candidates')
       .select()
-      .eq('id', 1)
+      .eq('email', email)
 
     // alert(error+'api')
 
