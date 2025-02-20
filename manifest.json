@@ -1,13 +1,15 @@
 {
+  "manifest_version": 3,
   "permissions": [
     "identity",
     "storage"
   ],
   "oauth2": {
-    "client_id": "117118404302-3n43k3maf50olo6mpdcn19tpmhelv5a9.apps.googleusercontent.com",
-    "scopes": [
-      "https://www.googleapis.com/auth/userinfo.email",
-      "https://www.googleapis.com/auth/userinfo.profile"
-    ]
+    "client_id": "113439342527-kliuhrfour83snj76k0fsuch50gu5rta.apps.googleusercontent.com",
+    "scopes":["email","profile","openid"]
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval' http://localhost:3000 http://localhost:3001; object-src 'self'"
   }
+ 
 } 
