@@ -5,9 +5,9 @@ import generateIcon from '~/assets/Frame.svg';
 import type { ContentScriptContext } from "wxt/client";
 import './styles.css'
 
-
 let AboutTheJobSection: string;
-let messageBox: HTMLElement
+let messageBox: HTMLElement;
+let company: string;
 
 export default defineContentScript({
   matches: ["*://*.linkedin.com/*", '*://*.wellfound.com/*'],
@@ -15,37 +15,35 @@ export default defineContentScript({
   runAt: 'document_start',
 
   async main(ctx) {
-
     chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
-      console.log(1)
-      // message recieved
+      console.log(1);
+      // message received
       if (request.message === "PageUpdated") {
-        console.log(2)
+        console.log(2);
         // icon initialization
         const img: HTMLImageElement = document.createElement('img');
 
         // img.className = 'w-10 h-10 float-right cursor-pointer'
-        img.src = generateIcon
-        img.id = 'generateIcon'
-        img.alt = 'generate icon'
-        img.style.width = '32px'
-        img.style.height = '32px'
-        img.style.position = 'relative'
-        img.style.bottom = '40px',
-        img.style.cursor = 'pointer'
+        img.src = generateIcon;
+        img.id = 'generateIcon';
+        img.alt = 'generate icon';
+        img.style.width = '32px';
+        img.style.height = '32px';
+        img.style.position = 'relative';
+        img.style.bottom = '40px';
+        img.style.cursor = 'pointer';
 
         img.onclick = () => {
-          ui.mount()
-        }
+          ui.mount();
+        };
 
         // mutation observer
         const observer = new MutationObserver((mutations, observer) => {
-
-          messageBox = document.getElementsByTagName("textarea")[0]
+          messageBox = document.getElementsByTagName("textarea")[0];
 
           if (messageBox?.parentElement?.childNodes?.length === 1) {
             // console.log(3)
-            messageBox.parentElement?.appendChild(img)
+            messageBox.parentElement?.appendChild(img);
 
             // Select the <h2> element that contains the text "About the job"
             const heading = Array.from(document.querySelectorAll('h2')).find(
@@ -53,12 +51,12 @@ export default defineContentScript({
             );
 
             AboutTheJobSection = heading?.parentNode?.textContent ? heading?.parentNode?.textContent : "";
+            company = document.querySelector('h1')?.textContent?.trim() || "";
 
             // Stop observing once the element is found
             observer.disconnect();
 
-            console.log('disconnected')
-
+            console.log('disconnected');
           }
         });
 
@@ -70,17 +68,14 @@ export default defineContentScript({
         // Send a response back
         sendResponse({
           status: "success",
-          response: "message recieved"
+          response: "message received"
         });
 
-        return true
-
+        return true;
       }
-    })
+    });
 
     const ui = await createUi(ctx);
-
-
   }
 });
 
@@ -91,7 +86,6 @@ function createUi(ctx: ContentScriptContext) {
     anchor: "body",
     append: "first",
     onMount: (container) => {
-
       // alert('mount')
       // Don't mount react app directly on <body>
       const wrapper = document.createElement("div");
@@ -99,13 +93,12 @@ function createUi(ctx: ContentScriptContext) {
 
       const root = ReactDOM.createRoot(wrapper);
       root.render(
-          <App
-            JD={AboutTheJobSection}
-            messageBox={messageBox} 
-          />
+        <App
+          JD={AboutTheJobSection}
+          messageBox={messageBox}
+        />
       );
       return { root, wrapper };
-
     },
     onRemove: (elements) => {
       elements?.root.unmount();
