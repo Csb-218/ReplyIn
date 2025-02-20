@@ -4,12 +4,8 @@ import 'react-quill/dist/quill.snow.css';
 import { Mistral } from "@mistralai/mistralai";
 import {  getCandidate } from "@/server/API";
 import { convert_to_readable, convert_to_readable_input ,toInputBox } from "@/utils/helpers";
-
-
-interface JD {
-  JD: string
-  messageBox: HTMLElement
-}
+import {JD} from '@/types'
+import { jsPDF } from "jspdf";
 
 const MistralApiKey1 = import.meta.env.WXT_MISTRAL_API_KEY1
 
@@ -28,10 +24,11 @@ const App = ({ JD, messageBox }: JD) => {
 
   let fullResponse:string = "";
   let cleanResponse : string;
-
+  
   async function generateChatResponseStream(data: any, JD: string, client: any) {
 
     try {
+      console.log(JD,data)
 
       const response = await client.chat.stream({
         model: 'mistral-large-latest',
@@ -43,10 +40,13 @@ const App = ({ JD, messageBox }: JD) => {
           
           # Write a suitable cover letter for the candidate using candidate's information. Don't provide a template. Tailor it according to the provided candidate's information. Use minute details such as candidate's address , phone number, candidate's name etc. to write a good cover letter. 
           ###Caution : Wherever you find null leave that field.
+          ###Caution : Do not exceed more than 250 words
 
           - Avoid using "null" in any part of the cover letter. Skip missing fields without mentioning them.
           - Format the letter properly with paragraphs and line breaks.
-          - Tailor the letter according to the job description and candidate's profile.`
+          - Tailor the letter according to the job description and candidate's profile.
+          
+          `
         }],
       });
 
@@ -81,8 +81,10 @@ const App = ({ JD, messageBox }: JD) => {
 
   async function generateCover() {
 
-    const candidate = await getCandidate()
-    console.log(candidate)
+    const user = await chrome.storage.local.get(['user'])
+    const email = user.user.email
+    const candidate = await getCandidate(email)
+    // console.log(candidate)
     
     const result = await generateChatResponseStream(candidate, JD, client)
 
@@ -100,6 +102,13 @@ const App = ({ JD, messageBox }: JD) => {
 
   }, [JD])
 
+  const downloadPDF = () => {
+    const doc = new jsPDF();
+    doc.text(toInputBox(content),10,10);
+    doc.save("cover_letter.pdf");
+  };
+
+ 
 
   return (
     hide === false
@@ -156,6 +165,13 @@ const App = ({ JD, messageBox }: JD) => {
               }}
             >
               <span>Continue</span>
+            </button>
+
+            <button
+              className="inline-flex items-center justify-center h-10 gap-2 px-5 text-sm font-medium tracking-wide text-white transition duration-300 rounded focus-visible:outline-none whitespace-nowrap bg-emerald-500 hover:bg-emerald-600 focus:bg-emerald-700 disabled:cursor-not-allowed disabled:border-emerald-300 disabled:bg-emerald-300 disabled:shadow-none"
+              onClick={downloadPDF}
+            >
+              <span>Download PDF</span>
             </button>
           </div>
         </div>
