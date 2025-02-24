@@ -2,9 +2,9 @@ import { useState, useRef } from "react";
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 import { Mistral } from "@mistralai/mistralai";
-import {  getCandidate } from "@/server/API";
-import { convert_to_readable, convert_to_readable_input ,toInputBox } from "@/utils/helpers";
-import {JD} from '@/types'
+import {  getCandidate } from "@/src/server/API";
+import { convert_to_readable, convert_to_readable_input ,toInputBox } from "@/src/utils/helpers";
+import {JD} from '@/src/types'
 import { jsPDF } from "jspdf";
 
 const MistralApiKey1 = import.meta.env.WXT_MISTRAL_API_KEY1
