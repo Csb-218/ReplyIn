@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { fakeBrowser } from "wxt/testing";
-import { listenUpdated } from "@/entrypoints/background";
+import { listenUpdated } from "@/src/entrypoints/background";
 
 // Mock the `isContentScriptReady` variable
 let isContentScriptReady = true;
