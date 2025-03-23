@@ -1,7 +1,7 @@
 import { useState, useRef, useMemo } from 'react'
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
-import {cover} from '../types'
+import {cover} from '@/types'
 
 
 const ModalActionButton = ({coverLetter,generating}:cover) => {
