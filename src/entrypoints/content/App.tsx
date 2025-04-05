@@ -1,31 +1,33 @@
-import { useState, useRef } from "react";
-import ReactQuill from 'react-quill';
+import { useState, useRef, useEffect } from "react";
+import ReactQuill, { Quill } from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
-import { Mistral } from "@mistralai/mistralai";
-import {  getCandidate } from "@/src/server/API";
-import { convert_to_readable, convert_to_readable_input ,toInputBox } from "@/src/utils/helpers";
-import {JD} from '@/src/types'
+import { getCandidate } from "../../server/API";
+import { convert_to_readable, convert_to_readable_input, toInputBox, convert_to_downloadable_pdf } from "@/utils/helpers";
+import { JD } from '@/types'
 import { jsPDF } from "jspdf";
+import QuillToPdf from "quill-to-pdf";
+import { saveAs } from "file-saver";
+import {mistral} from "@/utils/mistral"
 
-const MistralApiKey1 = import.meta.env.WXT_MISTRAL_API_KEY1
+
+
 
 const App = ({ JD, messageBox }: JD) => {
 
   const [content, setContent] = useState<string>(`Crafting your letter ... \n`);
+  const [rawContent, setRawContent] = useState<string>('')
   const [hide, setHide] = useState<boolean>(false);
-  const [streaming,setStreaming] = useState<boolean>(false);
+  const [streaming, setStreaming] = useState<boolean>(false);
+  const quillRef = useRef<ReactQuill>(null);
 
-  const client = new Mistral({
-    apiKey:  MistralApiKey1
-  });
 
-  let fullResponse:string = "";
-  let cleanResponse : string;
-  
+  let fullResponse: string = "";
+  let cleanResponse: string;
+
   async function generateChatResponseStream(data: any, JD: string, client: any) {
 
     try {
-      console.log(JD,data)
+      console.log(JD, data)
 
       const response = await client.chat.stream({
         model: 'mistral-large-latest',
@@ -42,6 +44,7 @@ const App = ({ JD, messageBox }: JD) => {
           - Avoid using "null" in any part of the cover letter. Skip missing fields without mentioning them.
           - Format the letter properly with paragraphs and line breaks.
           - Tailor the letter according to the job description and candidate's profile.
+          _ Add available url links in the cover letter.
           
           `
         }],
@@ -56,23 +59,23 @@ const App = ({ JD, messageBox }: JD) => {
         fullResponse += streamText;
         // Filter null fields and clean up formatting
         cleanResponse = fullResponse
-          .replace(/\n/g,"<br>")
+          .replace(/\n/g, "<br>")
           .trim(); // Trim whitespace from the beginning and end
         // Update the state with the full response so far
         setContent(cleanResponse); // Set the state with the accumulated response
-
+        // console.log(cleanResponse)
       }
 
     } catch (err) {
       setStreaming(false)
       setContent((content) => content + 'error')
       alert(err)
-    }finally{
+    } finally {
       setStreaming(false)
       return cleanResponse
     }
 
-    
+
 
   }
 
@@ -82,13 +85,14 @@ const App = ({ JD, messageBox }: JD) => {
     const email = user.user.email
     const candidate = await getCandidate(email)
     // console.log(candidate)
-    
-    const result = await generateChatResponseStream(candidate, JD, client)
 
+    const result = await generateChatResponseStream(candidate, JD, mistral)
+    console.log(result)
+    setRawContent(result)
     const readable_input = convert_to_readable_input(result)
     const readable = convert_to_readable(readable_input)
     setContent(readable)
-    
+
   }
 
 
@@ -99,67 +103,110 @@ const App = ({ JD, messageBox }: JD) => {
 
   }, [JD])
 
-  const downloadPDF = () => {
-        // Initialize PDF document
-        const doc = new jsPDF();
-    
-        // Set document properties
-        const fontSize = 12;
-        const lineHeight = fontSize * 1.2; // 1.2 is the default line height ratio
-        const margin = 20;
-        const pageWidth = doc.internal.pageSize.getWidth();
-        const maxWidth = pageWidth - (margin * 2);
-        
-        // Configure text settings
-        doc.setFont("helvetica"); // Default font
-        doc.setFontSize(fontSize);
-        doc.setLineHeightFactor(1.2);
-    
-        // Split text into paragraphs first
-    const paragraphs = content.split('\n');
-    let yPosition = margin;
+  const downloadPDF = async() => {
+    // Initialize PDF document
+    console.log(content)
+    console.log(rawContent)
+    console.log(convert_to_readable_input(rawContent))
 
-    paragraphs.forEach(paragraph => {
-        // Split each paragraph into multiple lines
-        const lines = doc.splitTextToSize(paragraph, maxWidth);
-        
-        // Handle empty lines for spacing
-        if (lines.length === 0) {
-            yPosition += lineHeight;
-            return;
-        }
-
-        lines.forEach((line: string | string[]) => {
-            if (yPosition + lineHeight > doc.internal.pageSize.getHeight() - margin) {
-                doc.addPage();
-                yPosition = margin;
-            }
-            doc.text(line, margin, yPosition);
-            yPosition += lineHeight;
-        });
-        
-        // Add extra space between paragraphs
-        yPosition += lineHeight * 0.5;
+    // doc.text(convert_to_downloadable_pdf(rawContent), 20, 20);
+    // doc.save("cover_letter.pdf");
+   
+    // // Create a new PDF document
+    const doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'pt',
+      format: 'a4'
     });
-    doc.save("cover_letter.pdf");
+
+    // Set font and size to match a typical letter appearance
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(12);
+
+    // Define layout parameters (in points, where 1 inch = 72 pt)
+    const leftMargin = 72; // 1-inch left margin
+    const rightMargin = 72; // 1-inch right margin
+    const textWidth = 595 - leftMargin - rightMargin; // A4 width is 595 pt
+    const lineHeight = 15; // Space between lines
+    const paragraphSpacing = 10; // Extra space between paragraphs/sections
+    let y = 72; // Starting y-position (1-inch top margin)
+
+    // Split the cover letter into lines
+    const lines = rawContent.split('<br>');
+    doc.text(lines, 72, 72, { maxWidth: 451 });
+
+    // // Group consecutive non-empty lines into blocks
+    // // let block:string[] = [];
+    // // lines.forEach(line => {
+    // //   if (line.trim() !== '') {
+    // //     // Add non-empty lines to the current block
+    // //     block.push(line);
+    // //   } else {
+    // //     // Process the block when hitting a blank line
+    // //     if (block.length > 0) {
+    // //       block.forEach(blockLine => {
+    // //         // Wrap text to fit within textWidth
+    // //         const wrappedLines = doc.splitTextToSize(blockLine, textWidth);
+    // //         wrappedLines.forEach((wrappedLine: string) => {
+    // //           doc.text(wrappedLine, leftMargin, y);
+    // //           y += lineHeight;
+    // //         });
+    // //       });
+    // //       // Add extra spacing after the block
+    // //       y += paragraphSpacing;
+    // //       block = []; // Reset the block
+    // //     }
+    // //   }
+    // // });
+
+    // // // Process any remaining block after the loop
+    // // if (block.length > 0) {
+    // //   block.forEach(blockLine => {
+    // //     const wrappedLines = doc.splitTextToSize(blockLine, textWidth);
+    // //     wrappedLines.forEach((wrappedLine:string) => {
+    // //       doc.text(wrappedLine, leftMargin, y);
+    // //       y += lineHeight;
+    // //     });
+    // //   });
+    // // }
+
+    // Save and download the PDF
+    doc.save('cover_letter.pdf');
+
+
   };
 
-  if( hide !== false){
-    return <></>
+
+
+  const handleChange = (value: string, delta: any, source: any, editor: any): void => {
+    setContent(value);
     
+    // Get the text content without HTML tags
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = value;
+    const textContent = tempDiv.textContent || tempDiv.innerText || '';
+    
+    // Replace newlines with <br> tags for rawContent
+    const formattedContent = textContent.replace(/\n/g, '<br>');
+    setRawContent(formattedContent);
+};
+
+  if (hide !== false) {
+    return <></>
+
   }
- 
+
 
   return (
-   
+
     <>
       {/* Modal */}
       <div
         id='modal backdrop'
+        className={`fixed top-0 left-0 flex items-center justify-center w-screen h-screen bg-slate-300/20 backdrop-blur-sm`}
         style={{
           zIndex: 500
         }}
-        className={`fixed top-0 left-0 z-50 flex items-center justify-center w-screen h-screen bg-slate-300/20 backdrop-blur-sm`}
         aria-labelledby="header-2a content-2a"
         aria-modal="true"
         tab-index="-1"
@@ -188,9 +235,9 @@ const App = ({ JD, messageBox }: JD) => {
           {/* modal body */}
           <div id="content-2a" className="flex-1 overflow-auto">
             {/* text editor */}
-            <ReactQuill theme="snow" value={content} onChange={setContent} />
+            <ReactQuill theme="snow" value={content} onChange={handleChange} ref={quillRef} />
 
-            
+
           </div>
 
           <div className="flex justify-end gap-2">
