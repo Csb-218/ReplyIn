@@ -1,5 +1,4 @@
 import ReactDOM from "react-dom/client";
-import { StrictMode } from "react";
 import App from "./App.tsx";
 import generateIcon from '~/assets/Frame.svg';
 import type { ContentScriptContext } from "wxt/client";
@@ -86,8 +85,7 @@ function createUi(ctx: ContentScriptContext) {
     anchor: "body",
     append: "first",
     onMount: (container) => {
-      // alert('mount')
-      // Don't mount react app directly on <body>
+      console.log('Mounting UI in shadow DOM');
       const wrapper = document.createElement("div");
       container.append(wrapper);
 
